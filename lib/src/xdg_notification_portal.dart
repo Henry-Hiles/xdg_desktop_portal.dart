@@ -89,62 +89,90 @@ class XdgNotificationPortal {
   /// Send a notification.
   /// [id] can be used later to withdraw the notification with [removeNotification].
   /// If [id] is reused without withdrawing, the existing notification is replaced.
-  Future<void> addNotification(String id,
-      {String? title,
-      String? body,
-      XdgNotificationIcon? icon,
-      XdgNotificationPriority? priority,
-      String? defaultAction,
-      List<XdgNotificationButton> buttons = const []}) async {
+  Future<void> addNotification(
+    String id, {
+    String? title,
+    String? body,
+    XdgNotificationIcon? icon,
+    XdgNotificationPriority? priority,
+    String? defaultAction,
+    String? defaultActionTarget,
+    List<XdgNotificationButton> buttons = const [],
+  }) async {
     var notification = <String, DBusValue>{};
+
     if (title != null) {
       notification['title'] = DBusString(title);
     }
+
     if (body != null) {
       notification['body'] = DBusString(body);
     }
+
     if (icon != null) {
       if (icon is XdgNotificationIconFile) {
-        notification['icon'] = DBusStruct(
-            [DBusString('file'), DBusVariant(DBusString(icon.path))]);
+        notification['icon'] = DBusStruct([
+          DBusString('file'),
+          DBusVariant(DBusString(icon.path)),
+        ]);
       } else if (icon is XdgNotificationIconUri) {
-        notification['icon'] =
-            DBusStruct([DBusString('file'), DBusVariant(DBusString(icon.uri))]);
+        notification['icon'] = DBusStruct([
+          DBusString('file'),
+          DBusVariant(DBusString(icon.uri)),
+        ]);
       } else if (icon is XdgNotificationIconThemed) {
-        notification['icon'] = DBusStruct(
-            [DBusString('themed'), DBusVariant(DBusArray.string(icon.names))]);
+        notification['icon'] = DBusStruct([
+          DBusString('themed'),
+          DBusVariant(DBusArray.string(icon.names)),
+        ]);
       } else if (icon is XdgNotificationIconData) {
-        notification['icon'] = DBusStruct(
-            [DBusString('bytes'), DBusVariant(DBusArray.byte(icon.data))]);
+        notification['icon'] = DBusStruct([
+          DBusString('bytes'),
+          DBusVariant(DBusArray.byte(icon.data)),
+        ]);
       }
     }
+
     if (priority != null) {
       notification['priority'] = DBusString({
             XdgNotificationPriority.low: 'low',
             XdgNotificationPriority.normal: 'normal',
             XdgNotificationPriority.high: 'high',
-            XdgNotificationPriority.urgent: 'urgent'
+            XdgNotificationPriority.urgent: 'urgent',
           }[priority] ??
           'normal');
     }
+
     if (defaultAction != null) {
       notification['default-action'] = DBusString(defaultAction);
     }
+
+    if (defaultActionTarget != null) {
+      notification['default-action-target'] =
+          DBusString(defaultActionTarget);
+    }
+
     if (buttons.isNotEmpty) {
       notification['buttons'] =
           DBusArray(DBusSignature('a{sv}'), buttons.map((button) {
         var values = {
           'label': DBusString(button.label),
-          'action': DBusString(button.action)
+          'action': DBusString(button.action),
         };
+
         return DBusDict.stringVariant(values);
       }));
     }
+
     await _object.callMethod(
-        'org.freedesktop.portal.Notification',
-        'AddNotification',
-        [DBusString(id), DBusDict.stringVariant(notification)],
-        replySignature: DBusSignature(''));
+      'org.freedesktop.portal.Notification',
+      'AddNotification',
+      [
+        DBusString(id),
+        DBusDict.stringVariant(notification),
+      ],
+      replySignature: DBusSignature(''),
+    );
   }
 
   /// Withdraw a notification created with [addNotification].
