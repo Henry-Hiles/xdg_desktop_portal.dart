@@ -141,6 +141,18 @@ class XdgDesktopPortalClient {
     }
   }
 
+  Future<void> registerApplication(String applicationId) async {
+    await _desktopObject.callMethod(
+      'org.freedesktop.host.portal.Registry',
+      'Register',
+      [
+        DBusString(applicationId),
+        DBusDict.stringVariant({}),
+      ],
+      replySignature: DBusSignature(''),
+    );
+  }
+
   /// Generate a token for requests and sessions.
   String _generateToken() {
     final random = Random();
